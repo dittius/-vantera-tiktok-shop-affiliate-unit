@@ -1,0 +1,206 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-pixel: 'Press Start 2P', ui-monospace, monospace;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+
+  --color-vantera-bg: #0b0e1a;
+  --color-vantera-panel: #12172a;
+  --color-vantera-panel-2: #1a2140;
+  --color-vantera-line: #2b3358;
+  --color-vantera-ink: #eef1ff;
+  --color-vantera-muted: #97a0c9;
+  --color-vantera-accent: #ff2f6e;
+  --color-vantera-accent-2: #35e6c4;
+  --color-vantera-accent-3: #7c5cff;
+  --color-vantera-warn: #ffb648;
+  --color-vantera-ok: #35e6c4;
+  --color-vantera-err: #ff5470;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--color-vantera-bg);
+  color: var(--color-vantera-ink);
+  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+.font-pixel {
+  font-family: var(--font-pixel);
+}
+
+/* iOS safe-area helpers */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+.safe-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-vantera-line);
+  border-radius: 4px;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes walkbob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 4px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes leaf-sway {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+/* --- character walk cycle --- */
+.char-bounce {
+  animation: walkbob 0.42s ease-in-out infinite;
+  transform-box: fill-box;
+}
+.leg-a {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: leg-swing-a 0.42s ease-in-out infinite;
+}
+.leg-b {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: leg-swing-b 0.42s ease-in-out infinite;
+}
+.arm-a {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: leg-swing-b 0.42s ease-in-out infinite;
+}
+.arm-b {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: leg-swing-a 0.42s ease-in-out infinite;
+}
+@keyframes leg-swing-a {
+  0%,
+  100% {
+    transform: rotate(18deg);
+  }
+  50% {
+    transform: rotate(-18deg);
+  }
+}
+@keyframes leg-swing-b {
+  0%,
+  100% {
+    transform: rotate(-18deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+}
