@@ -19,7 +19,7 @@ export type AgentRole =
   | 'Publisher'
   | 'Performance Analyst'
 
-export type AgentStatus = 'IDLE' | 'WORKING' | 'WALKING' | 'RELAX' | 'ERROR'
+export type AgentStatus = 'IDLE' | 'WORKING' | 'WALKING' | 'RELAX' | 'ERROR' | 'BLOCKED'
 
 export type ZoneId =
   | 'product-research'
@@ -57,6 +57,7 @@ export interface Agent {
   currentLocation: ZoneId
   homeZone: ZoneId
   activity: string
+  blockedReason?: string | null
   progress: { current: number; total: number } | null
   lastUpdate: number
   todayStats: AgentTodayStats
@@ -202,7 +203,20 @@ export interface EarningsSnapshot {
   conversions: number
 }
 
-export type MailCategory = 'DAILY_REPORT' | 'DAILY_PERFORMANCE_REPORT' | 'SYSTEM'
+export type MailCategory =
+  | 'DAILY_REPORT'
+  | 'DAILY_PERFORMANCE_REPORT'
+  | 'SYSTEM'
+  // Real-backend categories (server/src/types.ts MailCategory)
+  | 'PRODUCT_FOUND'
+  | 'VIDEO_READY'
+  | 'PUBLISH_SUCCESS'
+  | 'PUBLISH_FAILED'
+  | 'FIRST_ORDER'
+  | 'NEW_COMMISSION'
+  | 'WINNER'
+  | 'ABANDONED'
+  | 'ERROR'
 
 export interface InternalMail {
   id: string

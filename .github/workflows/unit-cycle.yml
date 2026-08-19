@@ -1,0 +1,73 @@
+name: Vantera Unit Cycle
+
+# This is the autonomous worker: it runs the 6 agents for one real cycle,
+# on a schedule, on GitHub's own infrastructure — no local computer, no
+# always-on server, and it keeps running even while the PWA is closed.
+# Every run is idempotent (see vantera-tiktok-shop-affiliate-unit/server/src/run-cycle.ts)
+# and commits the updated real state (server/data/*.json) straight back to
+# the repo, which doubles as a free, versioned, auditable database.
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: vantera-unit-cycle
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install espeak-ng (real TTS voiceover, ffmpeg ships preinstalled on this runner)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng
+
+      - name: Install server dependencies
+        working-directory: vantera-tiktok-shop-affiliate-unit/server
+        run: npm install
+
+      - name: Run one real unit cycle
+        working-directory: vantera-tiktok-shop-affiliate-unit/server
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TIKTOK_APP_KEY: ${{ secrets.TIKTOK_APP_KEY }}
+          TIKTOK_APP_SECRET: ${{ secrets.TIKTOK_APP_SECRET }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+          TIKTOK_SHOP_CIPHER: ${{ secrets.TIKTOK_SHOP_CIPHER }}
+          TIKTOK_API_BASE_URL: ${{ secrets.TIKTOK_API_BASE_URL }}
+          TIKTOK_API_PRODUCTS_SEARCH_PATH: ${{ secrets.TIKTOK_API_PRODUCTS_SEARCH_PATH }}
+          TIKTOK_API_ORDERS_SEARCH_PATH: ${{ secrets.TIKTOK_API_ORDERS_SEARCH_PATH }}
+          TIKTOK_API_PERFORMANCE_PATH: ${{ secrets.TIKTOK_API_PERFORMANCE_PATH }}
+          SEARCH_API_URL: ${{ secrets.SEARCH_API_URL }}
+          SEARCH_API_KEY: ${{ secrets.SEARCH_API_KEY }}
+          SEARCH_API_KEY_HEADER: ${{ secrets.SEARCH_API_KEY_HEADER }}
+        run: npm run cycle
+
+      - name: Commit updated real state
+        run: |
+          git config user.name "vantera-unit-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add vantera-tiktok-shop-affiliate-unit/server/data
+          if git diff --cached --quiet; then
+            echo "No state changes this cycle."
+          else
+            git commit -m "unit cycle: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi

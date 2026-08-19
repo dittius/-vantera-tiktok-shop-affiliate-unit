@@ -16,19 +16,19 @@ function wrapText(text: string, maxChars: number): string[] {
 
 interface SpeechBubbleProps {
   text: string
-  tone?: 'work' | 'handoff' | 'error'
+  tone?: 'work' | 'handoff' | 'error' | 'blocked'
   y?: number
 }
 
 /** Pure-SVG speech bubble, drawn above a character's head (local coords). */
 export function SpeechBubble({ text, tone = 'work', y = -58 }: SpeechBubbleProps) {
   if (!text) return null
-  const lines = wrapText(text, 20)
+  const lines = wrapText(text, tone === 'blocked' ? 26 : 20)
   const lineH = 9
   const padY = 5
-  const w = Math.min(120, Math.max(48, Math.max(...lines.map((l) => l.length)) * 4.6 + 12))
+  const w = Math.min(tone === 'blocked' ? 168 : 120, Math.max(48, Math.max(...lines.map((l) => l.length)) * 4.6 + 12))
   const h = lines.length * lineH + padY * 2
-  const fill = tone === 'handoff' ? '#35e6c4' : tone === 'error' ? '#ff5470' : '#eef1ff'
+  const fill = tone === 'handoff' ? '#35e6c4' : tone === 'error' ? '#ff5470' : tone === 'blocked' ? '#ffb648' : '#eef1ff'
   const textColor = '#0b0e1a'
 
   return (

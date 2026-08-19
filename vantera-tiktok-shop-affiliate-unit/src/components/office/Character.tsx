@@ -19,6 +19,7 @@ interface CharacterProps {
 export function Character({ def, status, seated, facing, bubbleText, onTap }: CharacterProps) {
   const walking = status === 'WALKING'
   const isError = status === 'ERROR'
+  const isBlocked = status === 'BLOCKED'
   const flip = facing === 'left' ? -1 : 1
 
   return (
@@ -87,7 +88,9 @@ export function Character({ def, status, seated, facing, bubbleText, onTap }: Ch
       {isError ? (
         <SpeechBubble text="Errore temporaneo..." tone="error" />
       ) : (
-        bubbleText && <SpeechBubble text={bubbleText} tone={walking ? 'handoff' : 'work'} />
+        bubbleText && (
+          <SpeechBubble text={bubbleText} tone={isBlocked ? 'blocked' : walking ? 'handoff' : 'work'} />
+        )
       )}
     </g>
   )

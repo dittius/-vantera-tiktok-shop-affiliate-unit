@@ -1,28 +1,58 @@
 # Vantera — TikTok Shop Affiliate Unit
 
-Una business unit interamente composta da 6 agenti AI dedicati alla creazione e
-gestione di contenuti affiliate per TikTok Shop, rappresentata come un vero
-ufficio virtuale in pixel art isometrica (ispirato a Habbo Hotel, asset
-originali). Web app mobile-first, installabile come PWA su iPhone, pensata per
-funzionare a **costo zero** su servizi free-tier.
+Una business unit di 6 agenti AI che cercano, creano, pubblicano e ottimizzano
+contenuti affiliate per TikTok Shop **in autonomia, nel cloud** — rappresentata
+come un vero ufficio virtuale in pixel art isometrica (ispirato a Habbo Hotel,
+asset originali). PWA mobile-first installabile su iPhone. Costo operativo: **0 €**.
 
-> ⚠️ **Stato reale**: nessuna integrazione TikTok Shop reale è presente in
-> questa versione (nessuna API key, nessun endpoint inventato). Finché non
-> vengono fornite credenziali reali, ogni dato commerciale è **0** o
-> **"Not connected"**. Tutto ciò che vedete muoversi/lavorare nell'ufficio con
-> **Demo Mode ON** è simulato ed è sempre etichettato `DEMO`.
+> ⚠️ **Stato reale**: nessuna integrazione TikTok Shop è ancora collegata
+> (nessuna API key fornita, nessun endpoint inventato). Finché non colleghi
+> TikTok Shop, ogni dato commerciale è onestamente **0** o **"Not connected"**
+> — vedi "Cosa è reale e cosa è Demo Mode" più sotto.
+
+## Come funziona, in una frase
+
+Un **worker autonomo gira su GitHub Actions** (non sul tuo computer) ogni ~20
+minuti, fa lavorare i 6 agenti su dati reali e scrive lo stato in
+`server/data/*.json`, che GitHub stesso versiona (= database gratuito e
+verificabile). La **PWA** (deployata su GitHub Pages) legge quello stato in
+tempo reale e lo mostra nell'ufficio — non lo simula più. Se chiudi l'app o
+spegni il telefono, il worker continua comunque a girare.
+
+## Architettura
+
+```
+┌─────────────────────┐        legge server/data/*.json        ┌──────────────────────────┐
+│   PWA (frontend)     │ ───────────────────────────────────►  │  GitHub repo (main)      │
+│   React + Vite       │        (raw.githubusercontent.com)     │  = database versionato    │
+│   deploy: GitHub      │                                         │  server/data/*.json       │
+│   Pages               │ ◄───── scrive control.json (PAT) ─────  │  server/media (release)   │
+└─────────────────────┘        via api.github.com                └──────────────────────────┘
+                                                                            ▲
+                                                                            │ commit ogni ciclo
+                                                                    ┌───────┴────────┐
+                                                                    │ GitHub Actions  │
+                                                                    │ unit-cycle.yml  │
+                                                                    │ (cron ogni 20') │
+                                                                    │ 6 agent workers │
+                                                                    │ ffmpeg + TTS    │
+                                                                    └────────────────┘
+```
+
+Zero server always-on, zero database a pagamento, zero credit card. GitHub è
+sia lo scheduler (Actions), sia il database (JSON versionato in git), sia lo
+storage media (Release assets) — tutto free-tier.
 
 ## Stack
 
-- **Vite + React 19 + TypeScript** — SPA statica, deployabile su qualunque hosting free-tier.
-- **Tailwind CSS v4** — styling.
-- **Zustand** (+ `immer`, `persist`) — stato applicativo e motore di simulazione, persistito in `localStorage` (nessun backend richiesto per la V1).
-- **vite-plugin-pwa** — manifest + service worker, installabile su iPhone/Android.
-- **SVG pixel-art proceduale** — l'intero ufficio, i personaggi e gli arredi sono disegnati a runtime con SVG (nessun asset proprietario, nessuna immagine esterna).
+- **Frontend**: Vite + React 19 + TypeScript + Tailwind v4, Zustand per stato UI locale (non più fonte di verità del lavoro). PWA via `vite-plugin-pwa`. Deploy: GitHub Pages.
+- **Backend/worker**: Node 22 + TypeScript, eseguito da GitHub Actions (`vantera-tiktok-shop-affiliate-unit/server`). Database: file JSON versionati in git (`server/data/`) — durevole, gratuito, auditabile via `git log`.
+- **Video**: ffmpeg (preinstallato sui runner GitHub) + `espeak-ng` (voiceover TTS reale, gratuito, offline). Output: MP4 reali, caricati come asset di una GitHub Release (storage media gratuito).
+- **TikTok Shop**: adapter astratto (`server/src/integrations/tiktok/`), credenziali solo lato server (GitHub Actions Secrets), mai nel frontend.
 
 Nessuna dipendenza a pagamento. Nessuna chiave API hardcoded.
 
-## Avvio in locale
+## Avvio in locale (frontend)
 
 ```bash
 cd vantera-tiktok-shop-affiliate-unit
@@ -30,152 +60,183 @@ npm install
 npm run dev
 ```
 
-Apri l'URL stampato in console (es. `http://localhost:5173`) — su desktop
-usa gli strumenti di sviluppo del browser in modalità responsive/iPhone per
-la resa mobile corretta, oppure apri lo stesso URL da Safari su iPhone (sulla
-stessa rete, sostituendo `localhost` con l'IP del computer).
+## Avvio in locale (un ciclo del worker, per debug)
+
+```bash
+cd vantera-tiktok-shop-affiliate-unit/server
+npm install
+npm run cycle   # scrive/aggiorna server/data/*.json
+```
+
+Senza credenziali TikTok, il ciclo gira comunque: Alessia risulterà
+onestamente `BLOCKED` con il motivo esatto. Nessun crash, nessun dato finto.
 
 ## Build di produzione
 
 ```bash
 npm run build   # tsc -b && vite build → genera dist/
-npm run preview # serve dist/ in locale per un test finale
+npm run preview # serve dist/ in locale
 ```
 
-## Deployment gratuito
+## Deployment — cosa è già pronto
 
-L'app è **statica** (solo `dist/`), quindi va bene qualunque hosting free-tier:
+- **`.github/workflows/unit-cycle.yml`**: il worker autonomo. Cron ogni 20
+  minuti + trigger manuale. Installa `espeak-ng`, esegue un ciclo reale,
+  committa `server/data/*.json` se cambiato. **Gira solo sul branch
+  `main`** (limite di GitHub Actions per gli schedule) — va quindi mergiato.
+- **`.github/workflows/deploy-pages.yml`**: build del frontend e deploy su
+  GitHub Pages a ogni push su `main`.
+- **`netlify.toml` / `vercel.json`**: alternative per il frontend se preferisci
+  Netlify/Vercel invece di Pages (il worker su Actions resta identico).
 
-- **Netlify**: è già presente `netlify.toml` (`npm run build`, publish `dist`, redirect SPA). Basta collegare il repo o fare `netlify deploy`.
-- **Vercel**: è già presente `vercel.json` con build command e rewrite SPA. `vercel --prod` oppure import da dashboard.
-- **GitHub Pages / Cloudflare Pages**: funzionano allo stesso modo, build command `npm run build`, output `dist`.
+### Cosa manca perché sia pubblicamente online — azioni richieste a te
 
-Nessuna variabile d'ambiente è obbligatoria per il deploy (vedi `.env.example`).
+1. **Rendere il repository pubblico** (Settings → General → Danger Zone →
+   Change visibility). GitHub Pages gratuito richiede un repo pubblico su
+   piano free, e la PWA legge `server/data/*.json` da
+   `raw.githubusercontent.com`, che serve solo repo pubblici senza token.
+   Nessun segreto verrebbe esposto: le credenziali TikTok vivono solo in
+   GitHub Actions Secrets, mai nel codice.
+2. **Abilitare GitHub Pages** (Settings → Pages → Source: **GitHub Actions**)
+   — un solo click, poi `deploy-pages.yml` fa il resto a ogni push su `main`.
+3. **Mergiare questo branch su `main`** — gli schedule di GitHub Actions
+   partono solo dal branch di default.
+
+Una volta fatto questo, l'unit inizia a girare da sola ogni 20 minuti
+(risultato onesto: agenti `BLOCKED` finché non colleghi TikTok — vedi sotto),
+e la PWA è raggiungibile su `https://<tuo-utente>.github.io/-vantera-tiktok-shop-affiliate-unit/`.
 
 ## Installazione come PWA su iPhone
 
 1. Apri l'URL dell'app in **Safari** su iPhone.
 2. Tocca l'icona di condivisione → **"Aggiungi a Home"**.
-3. L'app si apre standalone (senza barra Safari), con icona e splash dedicati, safe-area corretta per notch/Dynamic Island, e supporto sia portrait che landscape.
+3. L'app si apre standalone, con icona e splash dedicati, safe-area corretta
+   per notch/Dynamic Island, portrait e landscape.
+
+## Onboarding — le uniche due cose da fare, una volta sola
+
+Al primo avvio l'app mostra una guida con due passaggi reali (niente
+configurazioni tecniche superflue, nessuna API key da incollare in un file):
+
+1. **Connetti GitHub** (da **CONTROL**): crea un **Personal Access Token
+   fine-grained** su GitHub → Settings → Developer settings → Fine-grained
+   tokens → scoped **solo a questo repository**, permessi *Contents:
+   Read & write* + *Actions: Read & write*. Incollalo in CONTROL — resta
+   salvato solo nel tuo browser, non viene mai inviato altrove che a
+   `api.github.com`. Serve per far funzionare i pulsanti START/PAUSE/EMERGENCY
+   STOP da telefono (la PWA è statica: non ha un server suo per scrivere lo
+   stato, quindi scrive direttamente su GitHub con il tuo token).
+2. **Connetti TikTok Shop** (quando vuoi — non blocca il resto): registra
+   un'app su [partner.tiktokshop.com](https://partner.tiktokshop.com)
+   (Affiliate API, accesso sviluppatore gratuito, richiede review TikTok),
+   completa l'autorizzazione OAuth per il tuo account seller/affiliate, poi
+   aggiungi `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_ACCESS_TOKEN`,
+   `TIKTOK_REFRESH_TOKEN`, `TIKTOK_SHOP_CIPHER` come GitHub Actions Secrets
+   (Settings → Secrets and variables → Actions). Finché non lo fai, Alessia
+   resta onestamente `BLOCKED` con questo identico messaggio, visibile nel
+   suo pannello.
+
+Poi premi **START UNIT** in Control. Da quel momento il worker gira da solo
+ogni ~20 minuti, telefono e computer spenti inclusi.
 
 ## Come si usa
 
-La schermata principale è **l'ufficio virtuale isometrico** — non una dashboard.
-Occupa quasi tutto lo schermo; puoi trascinare con il dito per spostarti e
-pizzicare per zoomare. In basso ci sono solo 3 pulsanti: **MAIL**,
-**EARNINGS**, **CONTROL**. Tocca un personaggio per aprire il suo pannello di
-stato (task corrente, progress, statistiche di oggi, ultimi output,
-cronologia, errori).
-
-Per vedere l'unit "viva":
-
-1. Vai su **CONTROL**.
-2. Attiva **DEMO MODE** (etichetta arancione, sempre visibile quando attivo).
-3. Premi **START UNIT**.
-4. Torna all'ufficio: Alessia inizia a "scoutare" prodotti, seleziona un
-   candidato, cammina verso Tommaso passandogli il lavoro, e così via lungo
-   la pipeline `Alessia → Tommaso → Marta → Riccardo → Elena → Federico`. A
-   fine ciclo, ogni agente invia un Daily Report interno (visibile in
-   **MAIL**), e Federico può generare nuovi task per gli altri in base alla
-   performance simulata (replica hook vincenti, sostituzione prodotti in
-   calo, ecc.).
-
-Con **Demo Mode OFF**, l'ufficio resta vivo (i personaggi camminano, si
-siedono nell'area relax) ma **nessun task viene finto**: nessuna bolla di
-lavoro appare finché non esiste un task reale nello stato interno dell'app.
+La schermata principale è **l'ufficio virtuale isometrico** — non una
+dashboard. Trascina per muoverti, pizzica per zoomare. In basso: **MAIL**,
+**EARNINGS**, **CONTROL**. Tocca un personaggio per il suo pannello di stato
+(task corrente, progress, statistiche di oggi, ultimi output, cronologia,
+errori) — **con Demo Mode OFF, tutto qui viene letto dal backend reale**:
+se Alessia sta davvero analizzando prodotti, la vedi al lavoro con quel task;
+se Elena è bloccata perché manca un'autorizzazione, la vedi bloccata con
+quel motivo esatto ("ACTION REQUIRED" in arancione).
 
 ## I 6 agenti (nessun manager — riportano direttamente a Diego)
 
-| Agente | Ruolo | Zona |
-|---|---|---|
-| Alessia Riva | Product Scout | Product Research |
-| Tommaso Greco | Trend Researcher | Trend Research |
-| Marta Bellini | Content Writer | Content Desk |
-| Riccardo Sala | Video Maker | Video Studio |
-| Elena Moretti | Publisher | Publishing Desk |
-| Federico Conti | Performance Analyst | Analytics Room |
+| Agente | Ruolo | Zona | Cosa fa davvero |
+|---|---|---|---|
+| Alessia Riva | Product Scout | Product Research | Cerca prodotti reali via TikTok Shop Affiliate API, li valuta con uno score spiegabile, salva fonte e timestamp |
+| Tommaso Greco | Trend Researcher | Trend Research | Analizza segnali reali (via una search API collegabile) per hook/pain point/format, mai inventati |
+| Marta Bellini | Content Writer | Content Desk | Genera concept/script/storyboard/caption reali dal brief di Tommaso (regole deterministiche, nessuna dipendenza esterna) |
+| Riccardo Sala | Video Maker | Video Studio | Renderizza un vero MP4 (ffmpeg + voiceover TTS reale), lo carica come asset pubblico |
+| Elena Moretti | Publisher | Publishing Desk | Prepara caption/hashtag/disclosure AI/metadata reali; TikTok non permette auto-publish pubblico a terze parti non audit, quindi crea un singolo handoff umano minimo |
+| Federico Conti | Performance Analyst | Analytics Room | Analizza solo metriche reali (TikTok API o inserite da te), decide SCALE/ITERATE/RETEST/PAUSE/KILL, genera nuovi task |
 
-## Architettura per collegare i veri agenti in futuro
+Federico può generare nuovi task per Alessia, Tommaso, Marta o Riccardo in
+base alle performance reali — vedi `server/src/agents/federico.ts`.
 
-Ogni agente (`src/types/index.ts` → `Agent`) espone già lo shape minimo
-richiesto: `id, name, role, status, currentTask, currentLocation, activity,
-progress, lastUpdate`. Le entità `agents, tasks, products, creativeResearch,
-scripts, assets, videos, publications, performance, earnings, internalMail,
-activityLog` sono tutte tipizzate in `src/types/index.ts` e vivono nello
-store Zustand (`src/store/useAppStore.ts`), oggi persistite in
-`localStorage` dietro un'unica chiamata (`persist` middleware) — sostituibile
-con un vero backend (es. Supabase/Postgres free-tier) senza toccare la UI,
-basta cambiare lo storage adapter.
+## TikTok Shop — cosa è verificato e cosa manca
 
-Il motore di simulazione (`src/sim/`, azionato da `tick()` nello store) è
-isolato dalla UI: oggi guida solo dati Demo, ma la stessa pipeline di stage
-(`src/sim/stages.ts`) è pensata per essere sostituita, stage per stage, da
-chiamate reali a modelli/agenti AI.
+Verificato via ricerca (i domini TikTok sono bloccati dalla rete di questo
+ambiente di sviluppo, quindi la documentazione esatta non è stata letta
+direttamente — nessun endpoint è stato inventato):
 
-## Integrazione TikTok Shop (adapter pattern)
+- Esiste un programma **Affiliate API** aperto agli sviluppatori dal 2024,
+  con accesso base gratuito, tramite registrazione app + review su
+  [partner.tiktokshop.com](https://partner.tiktokshop.com).
+- Esiste una **Finance API** per settlement/payout/commissioni.
+- Il **Content Posting API** di TikTok (prodotto separato, non TikTok Shop)
+  permette upload video via API, ma per app non audit il post arriva come
+  bozza privata sull'account del creator collegato — **non pubblica
+  pubblicamente per conto terzi**. Per questo Elena prepara tutto e lascia
+  un solo passaggio umano finale, invece di fingere un auto-publish che
+  TikTok non permette.
 
-`src/integrations/tiktokShop/`:
-
-- `TikTokShopProvider.ts` — interfaccia astratta con `searchProducts,
-  getAffiliateProducts, getProductDetails, getAffiliateOrders,
-  getPerformance, publishVideo, getEarnings`.
-- `MockTikTokShopProvider.ts` — implementazione demo, **funziona solo se
-  Demo Mode è attivo** (altrimenti si comporta come "not connected").
-- `RealTikTokShopProvider.ts` — skeleton pronto per l'integrazione reale.
-  Legge solo variabili d'ambiente (`VITE_TIKTOK_APP_KEY`,
-  `VITE_TIKTOK_ACCESS_TOKEN`, `VITE_TIKTOK_SHOP_ID`, ...), **nessun endpoint
-  o credenziale è inventato**: finché mancano le credenziali, ogni metodo
-  ritorna dati vuoti / stato `NOT_CONNECTED`.
-
-### Cosa manca per il collegamento reale
-
-1. Accesso da sviluppatore TikTok Shop Partner / Affiliate Open API
-   (richiede approvazione TikTok — non disponibile pubblicamente al momento
-   della scrittura).
-2. Credenziali OAuth (app key/secret, access token, shop id) da inserire
-   come variabili d'ambiente (`.env`, vedi `.env.example`) — **mai
-   hardcoded**.
-3. Implementare i metodi in `RealTikTokShopProvider.ts` contro gli endpoint
-   reali (oggi sono stub che lanciano `not implemented yet`).
-4. Collegare `publishVideo` al flusso di pubblicazione reale (oggi Elena
-   "pubblica" solo in Demo Mode, con dati etichettati `DEMO`).
+`server/src/integrations/tiktok/RealTikTokShopProvider.ts` implementa la
+firma delle richieste (HMAC-SHA256, come da convenzione TikTok Shop Open
+API) e la gestione delle credenziali, ma lascia i **path esatti degli
+endpoint** come variabili d'ambiente da compilare (`TIKTOK_API_BASE_URL`,
+`TIKTOK_API_PRODUCTS_SEARCH_PATH`, ...) una volta che hai accesso reale a
+Partner Center e puoi confermarli — non tenta di indovinarli.
 
 ## Cosa è reale e cosa è Demo Mode
 
-**Reale (funziona sempre, anche con Demo Mode OFF):**
-- Interfaccia completa (ufficio, pannelli agente, Mail, Earnings, Control).
-- Stato agenti persistito, log attività, toggle Start/Pause Unit.
-- Ambient life dell'ufficio (idle, cammino verso l'area relax, sedute) — **senza** simulare task inesistenti.
-- Adapter TikTok Shop astratto, pronto per credenziali reali.
-- PWA installabile, offline-capable (service worker).
+**Reale (sempre, con Demo Mode OFF — il default):**
+- Worker autonomo su GitHub Actions, database versionato in git, storage video su GitHub Releases.
+- I 6 agenti con logica reale: ricerca prodotti (se TikTok connesso), script generati da brief reali, video renderizzati per davvero con ffmpeg, publishing con handoff umano reale, performance solo da dati reali.
+- Retry, timeout (45 min), idempotenza (idempotencyKey per task), heartbeat, recovery dopo crash (ogni ciclo riparte da dove si trovava lo stato committato).
+- MAIL, EARNINGS, CONTROL letti dal backend reale — 0/NOT CONNECTED finché non c'è un dato reale dietro.
+- Nessun token/secret nel frontend: le credenziali TikTok stanno solo in GitHub Actions Secrets; il PAT GitHub che tu incolli resta solo nel tuo browser.
 
-**Solo in Demo Mode (sempre etichettato `DEMO` in UI):**
-- Pipeline di task simulata tra i 6 agenti, con movimento reale nell'ufficio legato allo stato interno (non animazioni casuali).
-- Daily Report generati in Mail a fine di ogni ciclo pipeline.
-- Numeri in Earnings (commissioni, ordini, conversioni).
-- `MockTikTokShopProvider`.
+**Solo in Demo Mode (sempre etichettato `DEMO`, mai attivo di default):**
+- La pipeline simulata originale (`src/sim/`), identica a prima: utile per showcase/test dell'interfaccia senza aspettare dati reali.
+
+## Sicurezza
+
+- Le credenziali TikTok esistono solo come GitHub Actions Secrets, mai committate, mai nel bundle frontend.
+- Il PAT GitHub che l'utente collega da Control resta in `localStorage` del suo browser, usato solo per chiamare `api.github.com` direttamente (nessun server intermedio che potrebbe intercettarlo).
+- `EMERGENCY STOP` ferma immediatamente il worker (scrive `emergencyStop: true`, controllato a inizio di ogni ciclo prima di eseguire qualunque agente).
+- Ogni azione degli agenti è loggata in `activityLog` con timestamp, agente, esito.
 
 ## Struttura del progetto
 
 ```
-src/
-  types/            entità di dominio (Agent, Task, Product, ...)
-  data/              definizione dei 6 agenti + contenuti demo
-  integrations/tiktokShop/  adapter TikTok Shop (Provider/Mock/Real)
-  store/            zustand store + selettori (earnings)
-  sim/              motore di simulazione (stage pipeline, tick loop)
-  components/
-    office/         ufficio isometrico: iso projection, layout zone, arredi, personaggi, pan/zoom
-    panels/         AgentPanel, MailScreen, EarningsScreen, ControlScreen
-    nav/            bottom nav (MAIL / EARNINGS / CONTROL)
-    ui/             ScreenShell condiviso
-scripts/
-  generate-icons.mjs  genera le icone PWA (pixel-art originali, PNG codificato a mano, zero dipendenze immagine)
+vantera-tiktok-shop-affiliate-unit/
+  src/                          frontend PWA
+    types/                      entità dominio (shape UI) + real.ts (shape backend)
+    integrations/github/        client per leggere/scrivere lo stato reale via GitHub API
+    store/useRealStore.ts       stato reale (fetch da server/data/*.json)
+    store/useAppStore.ts        stato Demo Mode (motore di simulazione originale, invariato)
+    store/useOfficeAgents.ts    seleziona reale vs demo per l'ufficio
+    components/office/          ufficio isometrico (pixel art, invariato)
+    components/onboarding/      guida al primo avvio
+  server/                       backend/worker (NON deployato come server — eseguito da Actions)
+    src/db/                     store JSON file-based (repo.ts, store.ts)
+    src/agents/                 alessia.ts ... federico.ts — logica reale di ciascun agente
+    src/integrations/tiktok/    RealTikTokShopProvider (server-side, HMAC signing)
+    src/video/                  render.ts (ffmpeg), tts.ts (espeak-ng)
+    src/media/                  upload video su GitHub Release
+    src/run-cycle.ts            entrypoint eseguito da unit-cycle.yml
+    data/                       "database" — JSON versionati in git (creati al primo run)
+.github/workflows/
+  unit-cycle.yml                worker autonomo (cron ogni 20 min)
+  deploy-pages.yml               deploy frontend su GitHub Pages
 ```
 
 ## Test eseguiti
 
-- `npx tsc -b` — nessun errore di tipo.
+- `npx tsc -b` (frontend e server) — nessun errore di tipo.
 - `npx oxlint src` — nessun warning/errore.
-- `npm run build` — build di produzione completata (PWA + service worker generati).
-- Test funzionali end-to-end con Chromium in viewport iPhone 14 Pro: apertura app, pan/zoom ufficio, tap su personaggio → pannello, avvio Demo Mode, ciclo pipeline completo (Alessia → Federico) con movimento corretto e ritorno alla propria postazione, generazione Daily Report in Mail, calcolo Earnings da dati demo, toggle Control.
+- `npm run build` (frontend, con e senza `VITE_BASE_PATH`) — build di produzione completata.
+- **Worker**: ciclo reale eseguito in locale più volte di seguito — idempotente, heartbeat e contatori corretti, Alessia onestamente `BLOCKED` senza credenziali TikTok, nessun crash.
+- **Rendering video**: renderizzato un vero MP4 (1080×1920, H.264 + AAC, voiceover `espeak-ng` reale, caption bruciate, durata verificata con `ffprobe`) da un content-strategy di test.
+- **Frontend end-to-end** (Chromium, viewport iPhone 14 Pro): onboarding, ufficio con agenti onestamente `IDLE`/`BLOCKED` senza backend connesso, Control con flusso di connessione GitHub, Earnings/Mail correttamente a zero/vuoti senza dati reali, e — in Demo Mode — l'intera pipeline simulata originale ancora funzionante senza regressioni.

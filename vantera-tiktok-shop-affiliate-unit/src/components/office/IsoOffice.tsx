@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../../store/useAppStore'
+import { useOfficeAgents } from '../../store/useOfficeAgents'
 import { AGENT_DEFINITIONS } from '../../data/agents'
 import { CANVAS, GRID_COLS, GRID_ROWS, TILE_H, TILE_W, WALL_HEIGHT, toScreen } from './iso'
 import { ZONES, standTileFor } from './officeLayout'
@@ -172,7 +173,7 @@ function ZoneFurniture({ zoneId }: { zoneId: string }) {
 }
 
 export function IsoOffice() {
-  const agents = useAppStore((s) => s.agents)
+  const { agents } = useOfficeAgents()
   const selectAgent = useAppStore((s) => s.selectAgent)
 
   const { transform, handlers } = usePanZoom({ x: 0, y: 0, scale: 1 })
@@ -230,7 +231,8 @@ export function IsoOffice() {
           const facing = tile.col < 6.5 ? 'right' : 'left'
           const seated = agent.status === 'WORKING' || agent.status === 'RELAX'
           const showBubble =
-            (agent.status === 'WORKING' || agent.status === 'WALKING') && agent.activity
+            agent.status === 'WORKING' || agent.status === 'WALKING' || agent.status === 'BLOCKED'
+          const bubbleText = agent.status === 'BLOCKED' ? agent.blockedReason || 'Bloccato' : agent.activity
           return (
             <g
               key={def.id}
@@ -242,7 +244,7 @@ export function IsoOffice() {
                 status={agent.status}
                 seated={seated}
                 facing={facing}
-                bubbleText={showBubble ? agent.activity : undefined}
+                bubbleText={showBubble && bubbleText ? bubbleText : undefined}
                 onTap={() => selectAgent(def.id)}
               />
             </g>

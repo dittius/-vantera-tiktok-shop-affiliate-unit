@@ -1,4 +1,6 @@
 import { useAppStore } from './store/useAppStore'
+import { useRealStore } from './store/useRealStore'
+import { useRealDataPolling } from './store/useRealDataPolling'
 import { useSimulationLoop } from './sim/useSimulationLoop'
 import { IsoOffice } from './components/office/IsoOffice'
 import { AgentPanel } from './components/panels/AgentPanel'
@@ -6,9 +8,12 @@ import { MailScreen } from './components/panels/MailScreen'
 import { EarningsScreen } from './components/panels/EarningsScreen'
 import { ControlScreen } from './components/panels/ControlScreen'
 import { BottomNav } from './components/nav/BottomNav'
+import { OnboardingGate } from './components/onboarding/OnboardingGate'
 
 export default function App() {
   useSimulationLoop()
+  const demoMode = useAppStore((s) => s.demoMode)
+  useRealDataPolling(!demoMode)
   const screen = useAppStore((s) => s.screen)
 
   return (
@@ -20,13 +25,16 @@ export default function App() {
       {screen === 'control' && <ControlScreen />}
       <AgentPanel />
       <BottomNav />
+      <OnboardingGate />
     </div>
   )
 }
 
 function TopBar() {
-  const running = useAppStore((s) => s.running)
   const demoMode = useAppStore((s) => s.demoMode)
+  const demoRunning = useAppStore((s) => s.running)
+  const realRunning = useRealStore((s) => s.control.running)
+  const running = demoMode ? demoRunning : realRunning
   return (
     <div className="safe-top safe-left safe-right pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-2">
       <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-vantera-line bg-vantera-panel/90 px-3 py-1.5 backdrop-blur">

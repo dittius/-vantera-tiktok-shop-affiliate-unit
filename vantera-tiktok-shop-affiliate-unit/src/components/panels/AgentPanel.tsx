@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useAppStore } from '../../store/useAppStore'
+import { useOfficeAgents } from '../../store/useOfficeAgents'
 import { agentDef } from '../../data/agents'
 import { formatTime, relativeShort } from '../../utils/time'
 import type { AgentStatus } from '../../types'
@@ -10,13 +11,15 @@ const STATUS_META: Record<AgentStatus, { label: string; color: string }> = {
   WALKING: { label: 'WALKING', color: '#4fa9ff' },
   RELAX: { label: 'RELAX', color: '#ffb648' },
   ERROR: { label: 'ERROR', color: '#ff5470' },
+  BLOCKED: { label: 'ACTION REQUIRED', color: '#ffb648' },
 }
 
 export function AgentPanel() {
   const selectedId = useAppStore((s) => s.selectedAgentId)
-  const agent = useAppStore((s) => (selectedId ? s.agents[selectedId] : null))
   const selectAgent = useAppStore((s) => s.selectAgent)
   const demoMode = useAppStore((s) => s.demoMode)
+  const { agents } = useOfficeAgents()
+  const agent = selectedId ? agents[selectedId] : null
 
   if (!selectedId || !agent) return null
   const def = agentDef(selectedId)
@@ -87,8 +90,12 @@ export function AgentPanel() {
           )}
         </div>
 
-        <Section title="Current task">
-          {agent.currentTask ? (
+        <Section title={agent.status === 'BLOCKED' ? 'Action required' : 'Current task'}>
+          {agent.status === 'BLOCKED' ? (
+            <div className="rounded-xl border border-vantera-warn/40 bg-vantera-warn/10 px-3 py-2.5 text-sm text-vantera-ink">
+              {agent.blockedReason || 'In attesa di una connessione necessaria.'}
+            </div>
+          ) : agent.currentTask ? (
             <>
               <div className="text-sm text-vantera-ink">{agent.currentTask}</div>
               {agent.progress && (

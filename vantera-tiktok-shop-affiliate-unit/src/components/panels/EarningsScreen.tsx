@@ -1,21 +1,31 @@
 import { useMemo, type ReactNode } from 'react'
 import { useAppStore } from '../../store/useAppStore'
+import { useRealStore } from '../../store/useRealStore'
 import { ScreenShell } from '../ui/ScreenShell'
 import { computeEarnings } from '../../store/selectors'
+import { computeRealEarnings } from '../../store/realEarnings'
 
 function money(n: number): string {
   return n.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })
 }
 
 export function EarningsScreen() {
-  const performance = useAppStore((s) => s.performance)
-  const products = useAppStore((s) => s.products)
-  const videos = useAppStore((s) => s.videos)
   const demoMode = useAppStore((s) => s.demoMode)
+  const demoPerformance = useAppStore((s) => s.performance)
+  const demoProducts = useAppStore((s) => s.products)
+  const demoVideos = useAppStore((s) => s.videos)
+
+  const realPerformance = useRealStore((s) => s.performance)
+  const realProducts = useRealStore((s) => s.products)
+  const realVideos = useRealStore((s) => s.videos)
+  const realConnected = useRealStore((s) => s.control.tiktokStatus === 'CONNECTED')
 
   const earnings = useMemo(
-    () => computeEarnings(performance, products, videos, demoMode),
-    [performance, products, videos, demoMode],
+    () =>
+      demoMode
+        ? computeEarnings(demoPerformance, demoProducts, demoVideos, true)
+        : computeRealEarnings(realPerformance, realProducts, realVideos, realConnected),
+    [demoMode, demoPerformance, demoProducts, demoVideos, realPerformance, realProducts, realVideos, realConnected],
   )
 
   return (

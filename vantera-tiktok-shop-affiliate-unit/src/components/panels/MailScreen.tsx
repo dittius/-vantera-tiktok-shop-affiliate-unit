@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '../../store/useAppStore'
+import { useOfficeMail } from '../../store/useOfficeMail'
 import { ScreenShell } from '../ui/ScreenShell'
 import { agentDef } from '../../data/agents'
 import { formatDayLabel, formatTime } from '../../utils/time'
 import type { InternalMail } from '../../types'
 
 export function MailScreen() {
-  const mail = useAppStore((s) => s.mail)
-  const markMailRead = useAppStore((s) => s.markMailRead)
-  const markAllMailRead = useAppStore((s) => s.markAllMailRead)
+  const { mail, markRead: markMailRead, markAllRead: markAllMailRead } = useOfficeMail()
   const demoMode = useAppStore((s) => s.demoMode)
   const [openId, setOpenId] = useState<string | null>(null)
 
@@ -30,8 +29,9 @@ export function MailScreen() {
     <ScreenShell title="MAIL" subtitle={`Casella interna · ${unread} non lette`} accent="#ff2f6e">
       {!demoMode && mail.length === 0 && (
         <div className="mb-4 rounded-xl border border-vantera-line bg-vantera-panel px-4 py-3 text-xs text-vantera-muted">
-          Nessun report ancora. I 6 agenti inviano un Daily Report a fine giornata operativa —
-          attiva DEMO MODE in Control per vedere l'unit lavorare e generare i primi report.
+          Nessun report ancora. Gli agenti inviano un report a ogni evento reale (prodotto trovato,
+          video pronto, pubblicazione, ordine, ecc.) — vai in CONTROL per collegare TikTok Shop e
+          avviare l'unit, oppure attiva DEMO MODE per vedere un esempio di funzionamento.
         </div>
       )}
 
