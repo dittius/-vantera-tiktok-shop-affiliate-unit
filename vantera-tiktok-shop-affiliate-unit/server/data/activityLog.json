@@ -1,5 +1,19 @@
 [
   {
+    "id": "log_1788300670685_07ou",
+    "timestamp": "2026-09-01T22:11:10.685Z",
+    "kind": "SYSTEM",
+    "agentId": null,
+    "message": "Unit in pausa — nessun agente eseguito questo ciclo."
+  },
+  {
+    "id": "log_1788300670685_0aln",
+    "timestamp": "2026-09-01T22:11:10.685Z",
+    "kind": "HEARTBEAT",
+    "agentId": null,
+    "message": "Cycle started"
+  },
+  {
     "id": "log_1788299225692_fe28",
     "timestamp": "2026-09-01T21:47:05.692Z",
     "kind": "SYSTEM",
