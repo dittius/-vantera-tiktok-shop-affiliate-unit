@@ -1,5 +1,19 @@
 [
   {
+    "id": "log_1789498301829_9jcy",
+    "timestamp": "2026-09-15T18:51:41.829Z",
+    "kind": "SYSTEM",
+    "agentId": null,
+    "message": "Unit in pausa — nessun agente eseguito questo ciclo."
+  },
+  {
+    "id": "log_1789498301829_l29k",
+    "timestamp": "2026-09-15T18:51:41.829Z",
+    "kind": "HEARTBEAT",
+    "agentId": null,
+    "message": "Cycle started"
+  },
+  {
     "id": "log_1789497209918_c9dl",
     "timestamp": "2026-09-15T18:33:29.918Z",
     "kind": "SYSTEM",
@@ -6981,20 +6995,6 @@
   {
     "id": "log_1788880440547_x4c0",
     "timestamp": "2026-09-08T15:14:00.547Z",
-    "kind": "HEARTBEAT",
-    "agentId": null,
-    "message": "Cycle started"
-  },
-  {
-    "id": "log_1788879152128_f0df",
-    "timestamp": "2026-09-08T14:52:32.128Z",
-    "kind": "SYSTEM",
-    "agentId": null,
-    "message": "Unit in pausa — nessun agente eseguito questo ciclo."
-  },
-  {
-    "id": "log_1788879152128_a0ve",
-    "timestamp": "2026-09-08T14:52:32.128Z",
     "kind": "HEARTBEAT",
     "agentId": null,
     "message": "Cycle started"
